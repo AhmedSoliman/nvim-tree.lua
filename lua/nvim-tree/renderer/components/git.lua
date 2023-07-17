@@ -49,28 +49,29 @@ local function build_icons_table(i)
   }
 end
 
-local function nil_() end
+local function nil_()
+end
 
-local function warn_status(git_status)
+local function warn_status(scm_status)
   notify.warn(
     'Unrecognized git state "'
-      .. git_status
-      .. '". Please open up an issue on https://github.com/nvim-tree/nvim-tree.lua/issues with this message.'
+    .. scm_status
+    .. '". Please open up an issue on https://github.com/nvim-tree/nvim-tree.lua/issues with this message.'
   )
 end
 
 ---@param node table
 ---@return HighlightedString[]|nil
 local function get_icons_(node)
-  local git_status = explorer_node.get_git_status(node)
-  if git_status == nil then
+  local scm_status = explorer_node.get_scm_status(node)
+  if scm_status == nil then
     return nil
   end
 
   local inserted = {}
   local iconss = {}
 
-  for _, s in pairs(git_status) do
+  for _, s in pairs(scm_status) do
     local icons = M.git_icons[s]
     if not icons then
       if not M.config.highlight_git then
@@ -145,12 +146,12 @@ function M.setup_signs(i)
 end
 
 local function get_highlight_(node)
-  local git_status = explorer_node.get_git_status(node)
-  if git_status == nil then
+  local scm_status = explorer_node.get_scm_status(node)
+  if scm_status == nil then
     return
   end
 
-  return git_hl[git_status[1]]
+  return git_hl[scm_status[1]]
 end
 
 function M.setup(opts)

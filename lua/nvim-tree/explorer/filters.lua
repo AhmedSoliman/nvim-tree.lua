@@ -14,22 +14,22 @@ local function is_excluded(path)
   return false
 end
 
----Check if the given path is git clean/ignored
+---Check if the given path is scm clean/ignored
 ---@param path string Absolute path
----@param git_status table from prepare
+---@param scm_status table from prepare
 ---@return boolean
-local function git(path, git_status)
-  if type(git_status) ~= "table" or type(git_status.files) ~= "table" or type(git_status.dirs) ~= "table" then
+local function scm(path, scm_status)
+  if type(scm_status) ~= "table" or type(scm_status.files) ~= "table" or type(scm_status.dirs) ~= "table" then
     return false
   end
 
   -- default status to clean
-  local status = git_status.files[path]
-  status = status or git_status.dirs.direct[path] and git_status.dirs.direct[path][1]
-  status = status or git_status.dirs.indirect[path] and git_status.dirs.indirect[path][1]
+  local status = scm_status.files[path]
+  status = status or scm_status.dirs.direct[path] and scm_status.dirs.direct[path][1]
+  status = status or scm_status.dirs.indirect[path] and scm_status.dirs.indirect[path][1]
 
   -- filter ignored; overrides clean as they are effectively dirty
-  if M.config.filter_git_ignored and status == "!!" then
+  if M.config.filter_scm_ignored and status == "!!" then
     return true
   end
 
@@ -91,15 +91,15 @@ local function custom(path)
 end
 
 ---Prepare arguments for should_filter. This is done prior to should_filter for efficiency reasons.
----@param git_status table|nil optional results of git.load_project_status(...)
+---@param scm_status table|nil optional results of scm.load_project_status(...)
 ---@param unloaded_bufnr number|nil optional bufnr recently unloaded via BufUnload event
 ---@return table
---- git_status: reference
+--- scm_status: reference
 --- unloaded_bufnr: copy
 --- bufinfo: empty unless no_buffer set: vim.fn.getbufinfo { buflisted = 1 }
-function M.prepare(git_status, unloaded_bufnr)
+function M.prepare(scm_status, unloaded_bufnr)
   local status = {
-    git_status = git_status or {},
+    scm_status = scm_status or {},
     unloaded_bufnr = unloaded_bufnr,
     bufinfo = {},
   }
@@ -111,6 +111,9 @@ function M.prepare(git_status, unloaded_bufnr)
   return status
 end
 
+-- TODO: Remove
+local log = require "nvim-tree.log"
+
 ---Check if the given path should be filtered.
 ---@param path string Absolute path
 ---@param status table from prepare
@@ -121,17 +124,19 @@ function M.should_filter(path, status)
     return false
   end
 
-  return git(path, status.git_status)
-    or buf(path, status.bufinfo, status.unloaded_bufnr)
-    or dotfile(path)
-    or custom(path)
+  local should_be_filtered = scm(path, status.scm_status)
+      or buf(path, status.bufinfo, status.unloaded_bufnr)
+      or dotfile(path)
+      or custom(path)
+  log.line("filters", "Path '%s' filtered? = %s", path, should_be_filtered)
+  return should_be_filtered
 end
 
 function M.setup(opts)
   M.config = {
     filter_custom = true,
     filter_dotfiles = opts.filters.dotfiles,
-    filter_git_ignored = opts.git.ignore,
+    filter_scm_ignored = opts.scm.ignore,
     filter_git_clean = opts.filters.git_clean,
     filter_no_buffer = opts.filters.no_buffer,
   }

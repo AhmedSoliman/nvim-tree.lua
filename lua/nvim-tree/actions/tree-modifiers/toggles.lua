@@ -16,8 +16,8 @@ function M.custom()
   reload()
 end
 
-function M.git_ignored()
-  filters.config.filter_git_ignored = not filters.config.filter_git_ignored
+function M.scm_ignored()
+  filters.config.filter_scm_ignored = not filters.config.filter_scm_ignored
   reload()
 end
 

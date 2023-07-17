@@ -98,7 +98,7 @@ Api.tree.collapse_all = wrap(require("nvim-tree.actions.tree-modifiers.collapse-
 
 Api.tree.expand_all = wrap_node(require("nvim-tree.actions.tree-modifiers.expand-all").fn)
 
-Api.tree.toggle_gitignore_filter = wrap(require("nvim-tree.actions.tree-modifiers.toggles").git_ignored)
+Api.tree.toggle_gitignore_filter = wrap(require("nvim-tree.actions.tree-modifiers.toggles").scm_ignored)
 
 Api.tree.toggle_git_clean_filter = wrap(require("nvim-tree.actions.tree-modifiers.toggles").git_clean)
 
@@ -190,7 +190,7 @@ Api.node.navigate.diagnostics.prev = wrap_node(require("nvim-tree.actions.moves.
 Api.node.navigate.opened.next = wrap_node(require("nvim-tree.actions.moves.item").fn("next", "opened"))
 Api.node.navigate.opened.prev = wrap_node(require("nvim-tree.actions.moves.item").fn("prev", "opened"))
 
-Api.git.reload = wrap(require("nvim-tree.actions.reloaders.reloaders").reload_git)
+Api.git.reload = wrap(require("nvim-tree.actions.reloaders.reloaders").reload_scm)
 
 Api.events.subscribe = require("nvim-tree.events").subscribe
 Api.events.Event = require("nvim-tree.events").Event

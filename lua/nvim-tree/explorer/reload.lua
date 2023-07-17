@@ -4,7 +4,7 @@ local explorer_node = require "nvim-tree.explorer.node"
 local filters = require "nvim-tree.explorer.filters"
 local sorters = require "nvim-tree.explorer.sorters"
 local live_filter = require "nvim-tree.live-filter"
-local git = require "nvim-tree.git"
+local scm = require "nvim-tree.scm"
 local log = require "nvim-tree.log"
 
 local Watcher = require "nvim-tree.watcher"
@@ -14,7 +14,7 @@ local M = {}
 local function update_status(nodes_by_path, node_ignored, status)
   return function(node)
     if nodes_by_path[node.absolute_path] then
-      explorer_node.update_git_status(node, node_ignored, status)
+      explorer_node.update_scm_status(node, node_ignored, status)
     end
     return node
   end
@@ -22,26 +22,26 @@ end
 
 -- TODO always use callback once async/await is available
 local function reload_and_get_git_project(path, callback)
-  local project_root = git.get_project_root(path)
+  local project_root = scm.get_project_root(path)
 
   if callback then
-    git.reload_project(project_root, path, function()
-      callback(project_root, git.get_project(project_root) or {})
+    scm.reload_project(project_root, path, function()
+      callback(project_root, scm.get_project(project_root) or {})
     end)
   else
-    git.reload_project(project_root, path)
-    return project_root, git.get_project(project_root) or {}
+    scm.reload_project(project_root, path)
+    return project_root, scm.get_project(project_root) or {}
   end
 end
 
 local function update_parent_statuses(node, project, root)
   while project and node and node.absolute_path ~= root do
-    explorer_node.update_git_status(node, false, project)
+    explorer_node.update_scm_status(node, false, project)
     node = node.parent
   end
 end
 
-function M.reload(node, git_status, unloaded_bufnr)
+function M.reload(node, scm_status, unloaded_bufnr)
   local cwd = node.link_to or node.absolute_path
   local handle = vim.loop.fs_scandir(cwd)
   if not handle then
@@ -50,7 +50,7 @@ function M.reload(node, git_status, unloaded_bufnr)
 
   local profile = log.profile_start("reload %s", node.absolute_path)
 
-  local filter_status = filters.prepare(git_status, unloaded_bufnr)
+  local filter_status = filters.prepare(scm_status, unloaded_bufnr)
 
   if node.group_next then
     node.nodes = { node.group_next }
@@ -59,7 +59,7 @@ function M.reload(node, git_status, unloaded_bufnr)
 
   local child_names = {}
 
-  local node_ignored = explorer_node.is_git_ignored(node)
+  local node_ignored = explorer_node.is_scm_ignored(node)
   local nodes_by_path = utils.key_by(node.nodes, "absolute_path")
   while true do
     local name, t = vim.loop.fs_scandir_next(handle, cwd)
@@ -120,7 +120,7 @@ function M.reload(node, git_status, unloaded_bufnr)
   end
 
   node.nodes = vim.tbl_map(
-    update_status(nodes_by_path, node_ignored, git_status),
+    update_status(nodes_by_path, node_ignored, scm_status),
     vim.tbl_filter(function(n)
       if child_names[n.absolute_path] then
         return child_names[n.absolute_path]
@@ -135,7 +135,7 @@ function M.reload(node, git_status, unloaded_bufnr)
   local child_folder_only = explorer_node.has_one_child_folder(node) and node.nodes[1]
   if M.config.group_empty and not is_root and child_folder_only then
     node.group_next = child_folder_only
-    local ns = M.reload(child_folder_only, git_status)
+    local ns = M.reload(child_folder_only, scm_status)
     node.nodes = ns or {}
     log.profile_end(profile)
     return ns

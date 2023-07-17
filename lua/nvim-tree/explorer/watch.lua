@@ -7,8 +7,9 @@ local M = {
   uid = 0,
 }
 
-local function is_git(path)
-  return vim.fn.fnamemodify(path, ":t") == ".git"
+local function is_scm(path)
+  local trimmed = vim.fn.fnamemodify(path, ":t")
+  return (trimmed == ".git" or trimmed == ".sl")
 end
 
 local IGNORED_PATHS = {
@@ -47,7 +48,7 @@ function M.create_watcher(node)
     path = node.absolute_path
   end
 
-  if is_git(path) or is_folder_ignored(path) then
+  if is_scm(path) or is_folder_ignored(path) then
     return nil
   end
 

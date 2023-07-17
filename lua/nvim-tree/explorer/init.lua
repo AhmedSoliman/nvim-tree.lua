@@ -1,4 +1,4 @@
-local git = require "nvim-tree.git"
+local scm = require "nvim-tree.scm"
 local watch = require "nvim-tree.explorer.watch"
 local explorer_node = require "nvim-tree.explorer.node"
 
@@ -24,8 +24,8 @@ end
 
 function Explorer:_load(node)
   local cwd = node.link_to or node.absolute_path
-  local git_status = git.load_project_status(cwd)
-  M.explore(node, git_status)
+  local scm_status = scm.load_project_status(cwd)
+  M.explore(node, scm_status)
 end
 
 function Explorer:expand(node)

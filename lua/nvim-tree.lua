@@ -9,7 +9,7 @@ local change_dir = require "nvim-tree.actions.root.change-dir"
 local legacy = require "nvim-tree.legacy"
 local core = require "nvim-tree.core"
 local reloaders = require "nvim-tree.actions.reloaders.reloaders"
-local git = require "nvim-tree.git"
+local scm = require "nvim-tree.scm"
 local filters = require "nvim-tree.explorer.filters"
 local modified = require "nvim-tree.modified"
 local keymap_legacy = require "nvim-tree.keymap-legacy"
@@ -242,8 +242,8 @@ local function setup_autocommands(opts)
   create_nvim_tree_autocmd("User", {
     pattern = { "FugitiveChanged", "NeogitStatusRefreshed" },
     callback = function()
-      if not opts.filesystem_watchers.enable and opts.git.enable then
-        reloaders.reload_git()
+      if not opts.filesystem_watchers.enable and opts.scm.enable then
+        reloaders.reload_scm()
       end
     end,
   })
@@ -511,7 +511,24 @@ local DEFAULT_OPTS = { -- BEGIN_DEFAULT_OPTS
     debounce_delay = 50,
     ignore_dirs = {},
   },
+  scm = {
+    enable = true,
+    ignore = true,
+    show_on_dirs = true,
+    show_on_open_dirs = true,
+    disable_for_dirs = {},
+    timeout = 400,
+  },
+  -- TODO: Remove and fully replace by scm
   git = {
+    enable = true,
+    ignore = true,
+    show_on_dirs = true,
+    show_on_open_dirs = true,
+    disable_for_dirs = {},
+    timeout = 400,
+  },
+  sl = {
     enable = true,
     ignore = true,
     show_on_dirs = true,
@@ -669,7 +686,7 @@ function M.purge_all_state()
   view.close_all_tabs()
   view.abandon_all_windows()
   if core.get_explorer() ~= nil then
-    git.purge_state()
+    scm.purge_state()
     TreeExplorer = nil
   end
 end
@@ -714,7 +731,7 @@ function M.setup(conf)
   require("nvim-tree.colors").setup()
   require("nvim-tree.diagnostics").setup(opts)
   require("nvim-tree.explorer").setup(opts)
-  require("nvim-tree.git").setup(opts)
+  require("nvim-tree.scm").setup(opts)
   require("nvim-tree.view").setup(opts)
   require("nvim-tree.lib").setup(opts)
   require("nvim-tree.renderer").setup(opts)

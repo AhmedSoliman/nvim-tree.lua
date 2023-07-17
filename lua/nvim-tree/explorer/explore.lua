@@ -14,10 +14,10 @@ local function get_type_from(type_, cwd)
   return type_ or (vim.loop.fs_stat(cwd) or {}).type
 end
 
-local function populate_children(handle, cwd, node, git_status)
-  local node_ignored = explorer_node.is_git_ignored(node)
+local function populate_children(handle, cwd, node, scm_status)
+  local node_ignored = explorer_node.is_scm_ignored(node)
   local nodes_by_path = utils.bool_record(node.nodes, "absolute_path")
-  local filter_status = filters.prepare(git_status)
+  local filter_status = filters.prepare(scm_status)
   while true do
     local name, t = vim.loop.fs_scandir_next(handle)
     if not name then
@@ -48,7 +48,7 @@ local function populate_children(handle, cwd, node, git_status)
       if child then
         table.insert(node.nodes, child)
         nodes_by_path[child.absolute_path] = true
-        explorer_node.update_git_status(child, node_ignored, git_status)
+        explorer_node.update_scm_status(child, node_ignored, scm_status)
       end
     end
 

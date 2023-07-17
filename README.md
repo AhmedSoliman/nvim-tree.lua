@@ -1,4 +1,19 @@
-# A File Explorer For Neovim Written In Lua
+# A File Explorer For Neovim Written In Lua with support for Sapling SCM
+
+** NOTE: ** This is a modified and highly experimental version of [nvim-tree](https://github.com/nvim-tree/nvim-tree.lua) with [sapling SCM](https://sapling-scm.com) support. Use on your own risk.
+
+To install this version you need to point your plugin manager to this particular branch.
+
+Example for packer:
+```
+  use {
+    'AhmedSoliman/nvim-tree.lua',
+    requires = {
+      'nvim-tree/nvim-web-devicons', -- optional, for file icons
+    },
+    branch = 'AhmedSoliman/sapling-scm'
+  }
+```
 
 [![CI](https://github.com/nvim-tree/nvim-tree.lua/actions/workflows/ci.yml/badge.svg)](https://github.com/nvim-tree/nvim-tree.lua/actions/workflows/ci.yml)
 

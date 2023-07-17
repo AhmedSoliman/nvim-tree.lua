@@ -48,7 +48,7 @@ local function clone_node(node)
     absolute_path = node.absolute_path,
     executable = node.executable,
     extension = node.extension,
-    git_status = node.git_status,
+    scm_status = node.scm_status,
     has_children = node.has_children,
     hidden = node.hidden,
     link_to = node.link_to,

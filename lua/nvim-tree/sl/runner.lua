@@ -8,13 +8,28 @@ Runner.__index = Runner
 local timeouts = 0
 local MAX_TIMEOUTS = 5
 
+local mapping = {
+  ["M"] = "C ",
+  ["R"] = "D ",
+  ["I"] = "!!",
+  ["A"] = "A ",
+  ["?"] = " A",
+}
+
+-- FREEZE BLOCK
+-- We don't show files in target/ anymore, but the directory itself is:
+--   - Watched by watcher (the original big issue)
+
 function Runner:_parse_status_output(status, path)
   -- replacing slashes if on windows
   if vim.fn.has "win32" == 1 then
     path = path:gsub("/", "\\")
   end
   if #status > 0 and #path > 0 then
-    log.line("git", "status: '%s', path: '%s'", status, path)
+    -- IDEA: rewrite Status match git?
+    --local git_status = mapping[status]
+    status = mapping[status]
+    log.line("sl", "status: '%s', path: '%s'", status, path)
     self.output[utils.path_remove_trailing(utils.path_join { self.project_root, path })] = status
   end
 end
@@ -28,8 +43,8 @@ function Runner:_handle_incoming_data(prev_output, incoming)
       if skip_next_line then
         skip_next_line = false
       else
-        local status = line:sub(1, 2)
-        local path = line:sub(4, -2)
+        local status = line:sub(1, 1)
+        local path = line:sub(3, -2)
         if utils.str_find(status, "R") then
           -- skip next line if it is a rename entry
           skip_next_line = true
@@ -54,23 +69,22 @@ function Runner:_handle_incoming_data(prev_output, incoming)
 end
 
 function Runner:_getopts(stdout_handle, stderr_handle)
-  local untracked = self.list_untracked and "-u" or nil
-  local ignored = (self.list_untracked and self.list_ignored) and "--ignored=matching" or "--ignored=no"
+  local ignored = self.list_ignored and "--ignored" or ""
   return {
-    args = { "--no-optional-locks", "status", "--porcelain=v1", "-z", ignored, untracked, self.path },
+    args = { "status", "--color=never", "-mardu0", "--terse=i", ignored, self.path },
     cwd = self.project_root,
     stdio = { nil, stdout_handle, stderr_handle },
   }
 end
 
 function Runner:_log_raw_output(output)
-  if log.enabled "git" and output and type(output) == "string" then
-    log.raw("git", "%s", output)
-    log.line("git", "done")
+  if log.enabled "sl" and output and type(output) == "string" then
+    log.raw("sl", "%s", output)
+    log.line("sl", "done")
   end
 end
 
-function Runner:_run_git_job(callback)
+function Runner:_run_sl_job(callback)
   local handle, pid
   local stdout = vim.loop.new_pipe(false)
   local stderr = vim.loop.new_pipe(false)
@@ -102,11 +116,11 @@ function Runner:_run_git_job(callback)
   end
 
   local opts = self:_getopts(stdout, stderr)
-  log.line("git", "running job with timeout %dms", self.timeout)
-  log.line("git", "git %s", table.concat(utils.array_remove_nils(opts.args), " "))
+  log.line("sl", "running job with timeout %dms", self.timeout)
+  log.line("sl", "sl %s", table.concat(utils.array_remove_nils(opts.args), " "))
 
   handle, pid = vim.loop.spawn(
-    "git",
+    "sl",
     opts,
     vim.schedule_wrap(function(rc)
       on_finish(rc)
@@ -152,26 +166,26 @@ end
 
 function Runner:_finalise(opts)
   if self.rc == -1 then
-    log.line("git", "job timed out  %s %s", opts.project_root, opts.path)
+    log.line("sl", "job timed out  %s %s", opts.project_root, opts.path)
     timeouts = timeouts + 1
     if timeouts == MAX_TIMEOUTS then
       notify.warn(
         string.format(
-          "%d git jobs have timed out after %dms, disabling git integration. Try increasing git.timeout",
+          "%d sl jobs have timed out after %dms, disabling sl integration. Try increasing scm.timeout",
           timeouts,
           opts.timeout
         )
       )
-      require("nvim-tree.git").disable_git_integration()
+      require("nvim-tree.sl").disable_sl_integration()
     end
   elseif self.rc ~= 0 then
-    log.line("git", "job fail rc %d %s %s", self.rc, opts.project_root, opts.path)
+    log.line("sl", "job fail rc %d %s %s", self.rc, opts.project_root, opts.path)
   else
-    log.line("git", "job success    %s %s", opts.project_root, opts.path)
+    log.line("sl", "job success    %s %s", opts.project_root, opts.path)
   end
 end
 
---- Runs a git process, which will be killed if it takes more than timeout which defaults to 400ms
+--- Runs a sl process, which will be killed if it takes more than timeout which defaults to 400ms
 --- @param opts table
 --- @param callback function|nil executed passing return when complete
 --- @return table|nil status by absolute path, nil if callback present
@@ -179,19 +193,19 @@ function Runner.run(opts, callback)
   local self = setmetatable({
     project_root = opts.project_root,
     path = opts.path,
-    list_untracked = opts.list_untracked,
     list_ignored = opts.list_ignored,
-    timeout = opts.timeout or 400,
+    --timeout = opts.timeout or 400,
+    timeout = 4000,
     output = {},
     rc = nil, -- -1 indicates timeout
   }, Runner)
 
   local async = callback ~= nil
-  local profile = log.profile_start("git %s job %s %s", async and "async" or "sync", opts.project_root, opts.path)
+  local profile = log.profile_start("sl %s job %s %s", async and "async" or "sync", opts.project_root, opts.path)
 
   if async and callback then
     -- async, always call back
-    self:_run_git_job(function()
+    self:_run_sl_job(function()
       log.profile_end(profile)
 
       self:_finalise(opts)
@@ -200,7 +214,7 @@ function Runner.run(opts, callback)
     end)
   else
     -- sync, maybe call back
-    self:_run_git_job()
+    self:_run_sl_job()
     self:_wait()
 
     log.profile_end(profile)
